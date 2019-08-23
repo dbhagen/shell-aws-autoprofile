@@ -2,10 +2,27 @@
 If you're like me, you develop in a number of different AWS accounts or profiles. Having to make sure I'm currently using the correct one can be a pain. I wrote this script so that I could store a simple file with my project directory to make sure I'm always connecting to the write environment while working. Major thanks to the NVM team, as the config lookup functions were directly copied from their code and modified.
 
 ## Installation
+### [Oh-My-ZSH](https://github.com/robbyrussell/oh-my-zsh)
+Very similar to the plain install, just to the [Oh-My-ZSH](https://github.com/robbyrussell/oh-my-zsh) custom plugin folder.
+```
+git clone git@github.com:dbhagen/zsh-aws-autoprofile.git $ZSH_CUSTOM/plugins/zsh-aws-autoprofile
+```
+
+Then in your `.zshrc`, add the add-on to the plugin list.
+```
+plugins=(
+  battery
+  git
+  aws
+  zsh-aws-autoprofile
+)
+```
+
+### Plain ZSH
 Clone the repository either into your home folder, or somewhere you organize ZSH/Prompt configuration. For my example, I'll just store it in my home folder.
 
 ```
-git clone git@github.com:dbhagen/zsh-aws-autoprofile.git
+git clone git@github.com:dbhagen/zsh-aws-autoprofile.git ~/zsh-aws-autoprofile.git
 
 # Manually install it in your .zshrc file, or run this command to programmatically append it to the file.
 
