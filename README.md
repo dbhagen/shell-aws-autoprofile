@@ -2,11 +2,14 @@
 If you're like me, you develop in a number of different AWS accounts or profiles. Having to make sure I'm currently using the correct one can be a pain. I wrote this script so that I could store a simple file with my project directory to make sure I'm always connecting to the write environment while working. Major thanks to the NVM team, as the config lookup functions were directly copied from their code and modified.
 
 ## Installation
-Download the `zsh-aws-autoprofile.zsh` file and store it either in your home folder, or somewhere you organize ZSH/Prompt configuration. For my example, I'll just store it in my home folder.
+Clone the repository either into your home folder, or somewhere you organize ZSH/Prompt configuration. For my example, I'll just store it in my home folder.
 
 ```
-git clone 
-TODO:
+git clone git@github.com:dbhagen/zsh-aws-autoprofile.git
+
+# Manually install it in your .zshrc file, or run this command to programmatically append it to the file.
+
+echo "\nsource '${HOME}/zsh-aws-autoprofile/zsh-aws-autoprofile.zsh'\n" >> ~/.zshrc
 ```
 
 ## Usage
