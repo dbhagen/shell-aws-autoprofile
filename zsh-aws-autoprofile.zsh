@@ -39,4 +39,8 @@ awsprofile_config_profile() {
 }
 
 awsprofile_config_profile
-add-zsh-hook chpwd awsprofile_config_profile
+if [ ${ZSH[-5,-1]} == "oh-my-zsh" ]; then
+    chpwd_functions+=(awsprofile_config_profile)
+else
+    add-zsh-hook chpwd awsprofile_config_profile
+fi
