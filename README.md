@@ -9,7 +9,7 @@ git clone git@github.com:dbhagen/shell-aws-autoprofile.git ~/shell-aws-autoprofi
 
 # Manually install it in your .bashrc file, or run this command to programmatically append it to the file.
 
-echo "\nsource '${HOME}/shell-aws-autoprofile/shell-aws-autoprofile.sh'\n" >> ~/.bashrc
+printf "\nsource '${HOME}/shell-aws-autoprofile/shell-aws-autoprofile.sh'\n" >> ~/.bashrc
 ```
 
 ### [Oh-My-ZSH](https://github.com/robbyrussell/oh-my-zsh)
