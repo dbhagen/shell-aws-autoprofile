@@ -62,13 +62,13 @@ awsprofile_config_profile() {
   export AWS_PROFILE="${AWSPROFILE_CONFIG_PROFILE}"
 }
 
-if [ "${0:${#0}-3,3}" = "zsh" ]; then
+if [ "${0:${#0}-4:4}" = "bash" ]; then
+  CHPWD_COMMAND="${CHPWD_COMMAND:+$CHPWD_COMMAND;}awsprofile_config_profile"
+elif [ "${0[-3,-1]}" = "zsh" ]; then
   if [ "${ZSH[-9,-1]}" = "oh-my-zsh" ]; then
     chpwd_functions+=(awsprofile_config_profile)
   else
     add-zsh-hook chpwd awsprofile_config_profile
   fi
-elif [ "${0:${#0}-4:4}" = "bash" ]; then
-  CHPWD_COMMAND="${CHPWD_COMMAND:+$CHPWD_COMMAND;}awsprofile_config_profile"
 fi
 awsprofile_config_profile
