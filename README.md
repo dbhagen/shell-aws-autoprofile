@@ -43,9 +43,11 @@ echo "\nsource '${HOME}/shell-aws-autoprofile/shell-aws-autoprofile.sh'\n" >> ~/
 ```
 
 ## Usage
-SHELL-AWS-AUTOPROFILE is a small add-on to BASH and ZSH that allows the environment variable `AWS_PROFILE` to be set via a `.awsprofile` file in the current working directory, or a parent there of. Failing that, it will look in the current user's `$HOME` folder for a `.awsprofile` file.
+SHELL-AWS-AUTOPROFILE is a small add-on to BASH and ZSH that allows the environment variables `AWS_PROFILE` and `AWS_REGION` to be set via a `.awsprofile` file in the current working directory, or a parent there of. Failing that, it will look in the current user's `$HOME` folder for a `.awsprofile` file.
 
-The content of this file should be the profile name, one of the ones found in your `$HOME/.aws/credentials` file, per the AWS CLI configuration.
+Contents of this file should contain 2 lines:
+ - profile name on line 1 (should match one of the profiles found in `$HOME/.aws/credetials`)
+ - region name on line 2
 
 I highly recommend this with a ZSH ([Oh-My-ZSH](https://github.com/robbyrussell/oh-my-zsh)+[Spaceship Prompt](https://github.com/denysdovhan/spaceship-prompt)) or BASH ([BASH-IT](https://github.com/Bash-it/bash-it)) prompt that displays the current AWS profile.
 

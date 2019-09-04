@@ -48,18 +48,23 @@ awsprofile_find_config() {
 
 awsprofile_config_profile() {
   export AWSPROFILE_CONFIG_PROFILE=''
+  export AWSREGION_CONFIG_REGION=''
   local AWSPROFILE_CONFIG_PATH
   AWSPROFILE_CONFIG_PATH="$(awsprofile_find_config)"
   if [ ! -e "${AWSPROFILE_CONFIG_PATH}" ]; then
     echo "No .awsprofile file found"
     return 1
   fi
-  AWSPROFILE_CONFIG_PROFILE="$(command head -n 1 "${AWSPROFILE_CONFIG_PATH}" | command tr -d '\r')" || command printf ''
+  AWSPROFILE_CONFIG_PROFILE="$(command sed -n 1p "${AWSPROFILE_CONFIG_PATH}" | command tr -d '\r')" || command printf ''
+  AWSREGION_CONFIG_REGION="$(command sed -n 2p "${AWSPROFILE_CONFIG_PATH}" | command tr -d '\r')" || command printf ''
   if [ -z "${AWSPROFILE_CONFIG_PROFILE}" ]; then
     echo "Warning: empty .awsprofile file found at \"${AWSPROFILE_CONFIG_PATH}\""
     return 2
   fi
   export AWS_PROFILE="${AWSPROFILE_CONFIG_PROFILE}"
+  if [ -n "${AWSREGION_CONFIG_REGION}" ]; then
+    export AWS_REGION="${AWSREGION_CONFIG_REGION}"
+  fi
 }
 
 if [ "${0:${#0}-4:4}" = "bash" ]; then
