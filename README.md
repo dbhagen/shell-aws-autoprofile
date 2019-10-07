@@ -1,5 +1,5 @@
 # SHELL-AWS-AUTOPROFILE Add-On
-If you're like me, you develop in a number of different AWS accounts or profiles. Having to make sure I'm currently using the correct one can be a pain. I wrote this script so that I could store a simple file with my project directory to make sure I'm always connecting to the write environment while working. Major thanks to the NVM team, as the config lookup functions were directly copied from their code and modified.
+If you're like me, you develop in a number of different AWS accounts or profiles. Having to make sure I'm currently using the correct one can be a pain. I wrote this script so that I could store a simple file with my project directory to make sure I'm always connecting to the correct environment while working. Major thanks to the NVM team, as the config lookup functions were directly copied from their code and modified.
 
 Example prompt
 ![Example Prompt](https://raw.githubusercontent.com/dbhagen/shell-aws-autoprofile/master/example.png)
