@@ -57,7 +57,10 @@ awsprofile_config_profile() {
   fi
   AWSPROFILE_CONFIG_PROFILE="$(command sed -n 1p "${AWSPROFILE_CONFIG_PATH}" | command tr -d '\r')" || command printf ''
   AWSREGION_CONFIG_REGION="$(command sed -n 2p "${AWSPROFILE_CONFIG_PATH}" | command tr -d '\r')" || command printf ''
-  if [ -z "${AWSPROFILE_CONFIG_PROFILE}" ]; then
+  if grep -q none "$AWSPROFILE_CONFIG_PATH"; then
+    echo "explicit 'none' profile found in .awsprofile file, unsetting profile"
+    AWSPROFILE_CONFIG_PROFILE=''
+  elif [ -z "${AWSPROFILE_CONFIG_PROFILE}" ]; then
     echo "Warning: empty .awsprofile file found at \"${AWSPROFILE_CONFIG_PATH}\""
     return 2
   fi
