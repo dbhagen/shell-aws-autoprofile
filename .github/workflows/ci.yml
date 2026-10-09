@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gates:
+    name: quality-gates (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ubuntu-latest has shellcheck preinstalled but no zsh.
+      - name: Install zsh (ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends zsh
+
+      # macOS has zsh preinstalled but no shellcheck; the behavior suite also
+      # shells out to GNU `timeout`, which macOS does not ship (coreutils).
+      - name: Install shellcheck + GNU coreutils (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install shellcheck coreutils
+          echo "$(brew --prefix coreutils)/libexec/gnubin" >> "$GITHUB_PATH"
+
+      # Repo convention: shellcheck has no zsh dialect; the plugin copy is
+      # linted identically and byte-identity with the .sh copy is asserted below.
+      - name: shellcheck -s bash (both script copies)
+        run: |
+          shellcheck -s bash shell-aws-autoprofile.sh
+          shellcheck -s bash shell-aws-autoprofile.plugin.zsh
+
+      - name: Syntax checks (bash -n, zsh -n)
+        run: |
+          bash -n shell-aws-autoprofile.sh
+          zsh -n shell-aws-autoprofile.sh
+
+      # The product is two byte-identical copies; any drift fails the build.
+      - name: Byte-identity check (cmp)
+        run: cmp shell-aws-autoprofile.sh shell-aws-autoprofile.plugin.zsh
+
+      - name: Behavior suite under bash
+        run: bash tests/run.sh
+
+      - name: Behavior suite under zsh
+        run: zsh tests/run.sh
