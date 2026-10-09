@@ -1,0 +1,10 @@
+# Obvious repo policy — dbhagen/shell-aws-autoprofile
+# GitHub default branch: master
+reviews:
+  automated:
+    enabled: true
+qa:
+  guidePaths:
+    - .obvious/QA.md
+  automationPaths:
+    - tests/run.sh
