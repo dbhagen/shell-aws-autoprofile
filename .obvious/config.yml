@@ -1,0 +1,36 @@
+# Obvious repo policy — dbhagen/shell-aws-autoprofile
+# Default base verified against GitHub: gh repo view --json defaultBranchRef -> {"defaultBranchRef":{"name":"master"}} (2026-10-09)
+branches:
+  defaultBase: master
+pr:
+  merge:
+    method: squash
+reviews:
+  automated:
+    enabled: true
+  routing:
+    rules:
+      - name: Shell scripts and tests
+        match:
+          - shell-aws-autoprofile.sh
+          - shell-aws-autoprofile.plugin.zsh
+          - tests/**
+        mode: specialized
+        reviewers:
+          - type: general
+      - name: Docs and repo policy
+        match:
+          - "**/*.md"
+          - .obvious/**
+        mode: none
+      - name: Everything else
+        match:
+          - "**"
+        mode: single
+triageProjects:
+  reviewProjectId: prj_JQqwF0Q2
+qa:
+  guidePaths:
+    - .obvious/QA.md
+  automationPaths:
+    - tests/run.sh
