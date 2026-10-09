@@ -1,35 +1,37 @@
 # Orientation — shell-aws-autoprofile
 
-Updated 2026-10-09 against head `4f8ce56042b134174e514b20caf146c439b6d3c0` (branch `master`).
+Updated 2026-10-09 against head `97e6ad91aa5a68a955a335a27c9656bdecd8d065` (branch `master`, after behavior PR #4 merged).
 
 ## What this repo is
-A small shell add-on for Bash and ZSH. On every directory change (and once per shell start) it looks for a `.awsprofile` file from the current directory upward, falls back to `$HOME/.awsprofile`, and exports `AWS_PROFILE` (line 1) and `AWS_REGION` (optional line 2). A line-1 value of `none` clears `AWS_PROFILE`; a region on line 2 is still honored. There is no build step, no dependency manager, and (at wave start) no CI: the product is two byte-identical script copies plus docs.
+A small shell add-on for Bash and ZSH. On every directory change (and once per shell start) it looks for a `.awsprofile` file from the current directory upward, falls back to `$HOME/.awsprofile`, and exports `AWS_PROFILE` (line 1) and `AWS_REGION` (optional line 2). A line-1 value of exactly `none` unsets `AWS_PROFILE` (region still applied). There is no build step, no dependency manager, and (at wave start) no CI: the product is two byte-identical script copies, a fixture test suite, plus docs.
 
 ## Runtime model
 - The user sources the script from `.bashrc` / `.zshrc` (or Oh My Zsh loads the plugin copy from its custom plugins folder).
 - Sourcing registers a refresh hook and immediately calls the profile function once.
-- On Bash the hook rides `PROMPT_COMMAND` (evaluated before each prompt); on ZSH it rides `chpwd_functions` (Oh My Zsh) or `add-zsh-hook chpwd` (plain ZSH), firing on every `cd`.
+- On Bash the hook rides `PROMPT_COMMAND` (evaluated before each prompt); on ZSH it rides `chpwd_functions` (Oh My Zsh) or `add-zsh-hook chpwd` after `autoload -Uz add-zsh-hook` (plain ZSH), firing on every `cd`.
 - Each refresh re-resolves the nearest `.awsprofile` and re-exports the environment.
 
 ## Function walk
-Line references are to head `4f8ce56`.
+Line references are to head `97e6ad9` (`shell-aws-autoprofile.sh`, 117 lines; the plugin copy is byte-identical).
 
-1. **Shell detection (lines 75-83).** Selects wiring by the tail of `$0`: Bash matches when the last 4 characters (`${0:${#0}-4:4}`) are `bash`; ZSH matches when the last 3 (`${0[-3,-1]}`) are `zsh`. ZSH sets `$0` to the sourced file during `source`, so the `.plugin.zsh` copy matches and the plain `.sh` copy (tail `.sh`) does not — see the observations below. Under Oh My Zsh (`${ZSH[-9,-1]}` = `oh-my-zsh`) the function is appended to `chpwd_functions`; otherwise `add-zsh-hook chpwd` registers it.
-2. **`_chpwd_hook` (lines 6-21, Bash only).** Prepended to `PROMPT_COMMAND` (line 24). When `$PREVPWD` differs from `$PWD`, it runs every command listed in the semicolon-separated `$CHPWD_COMMAND` registry, then re-records `PREVPWD`.
-3. **`awsprofile_find_up` (lines 26-33).** Walks `$PWD` upward by stripping the trailing path component until `${path}/.awsprofile` exists, then echoes the containing directory; echoes an empty string when nothing is found.
-4. **`awsprofile_find_config` (lines 35-47).** Uses `${dir}/.awsprofile` when it exists, else `$HOME/.awsprofile`, else echoes the literal string `No AWS profile found.` — which fails the caller's existence check and drives the not-found path.
-5. **`awsprofile_config_profile` (lines 49-73).** The entry point. Resets the introspection exports `AWSPROFILE_CONFIG_PROFILE` / `AWSREGION_CONFIG_REGION`; resolves the config path; returns 1 with `No .awsprofile file found` when there is none; reads line 1 / line 2 (`sed -n 1p` / `sed -n 2p`, each piped through `tr -d '\r'`); applies the reserved-`none` rule (`grep -q none` over the file, clearing the profile and, when the guard worked, printing an alert); warns and returns 2 on an empty file; finally exports `AWS_PROFILE` and — only when a region line is present — `AWS_REGION`.
-6. **Startup call (line 84).** The function runs once unconditionally at source time.
+1. **Bash-only prompt machinery (lines 3-26, guarded by `${BASH_VERSION:-}`).** `CHPWD_COMMAND` (line 6) is a semicolon-separated registry of Bash refresh commands. `_chpwd_hook` (lines 9-23) runs every registered command when `$PREVPWD` differs from `$PWD`, then re-records `PREVPWD`. Line 25 prepends `_chpwd_hook` to `PROMPT_COMMAND`. The guard means none of this registers under zsh.
+2. **`awsprofile_find_up` (lines 28-45).** Walks the search start upward by stripping the trailing path component until `${path}/.awsprofile` exists, then echoes the containing directory; echoes an empty string when nothing is found. Hardening (merged in #4): a slash-free relative `$PWD` (only possible via an override; a real `cd` always yields an absolute path) is first normalized with `command pwd -P` (lines 34-37), and the loop breaks when `%/*` stops shortening (lines 41-43), so it cannot loop forever.
+3. **`awsprofile_find_config` (lines 47-57).** Uses `${dir}/.awsprofile` when it exists, else `$HOME/.awsprofile`, else echoes the literal string `No AWS profile found.` — which fails the caller's existence check and drives the not-found path.
+4. **`awsprofile_trim` (lines 59-63, added in #4).** Trims leading/trailing whitespace from a value via `%%`/`##` pattern expansion.
+5. **`awsprofile_config_profile` (lines 65-100).** The entry point. Resets the introspection exports `AWSPROFILE_CONFIG_PROFILE` / `AWSREGION_CONFIG_REGION` (67-68); resolves the config path; returns 1 with `No .awsprofile file found` when there is none (71-74); reads lines 1 and 2 (`sed -n 1p` / `sed -n 2p`, piped through `tr -d '\r'` and `awsprofile_trim`, 76-77); applies the reserved-`none` rule by exact match on the parsed line-1 value (83): on match, clears `AWSPROFILE_CONFIG_PROFILE` and — unless `AWSPROFILE_IGNORE_EXPLICIT_NONE_PROFILE` is exactly `true` (84-86) — prints the alert `explicit 'none' profile found in .awsprofile file, unsetting profile`; an empty (after trim) line 1 instead warns `Warning: empty .awsprofile file found at "..."` and returns 2 (89-91). Finally: a non-empty profile is exported as `AWS_PROFILE` (93-94), otherwise `AWS_PROFILE` is **unset** (96-97, the fixed #4 semantics — the variable ceases to exist); the region is exported as `AWS_REGION` only when non-empty (99-100).
+6. **Registration (lines 102-109).** Bash appends `awsprofile_config_profile` to `CHPWD_COMMAND`; ZSH appends to `chpwd_functions` when `${ZSH}/oh-my-zsh.sh` exists (real Oh My Zsh install), else registers via `autoload -Uz add-zsh-hook` + `add-zsh-hook chpwd` (plain ZSH — the #4 fix).
+7. **Startup call (line 111).** The function runs once unconditionally at source time.
 
 ## Environment variables
-- Exported by the script: `AWS_PROFILE`, `AWS_REGION`, `AWSPROFILE_CONFIG_PROFILE` (profile exactly as read from the file), `AWSREGION_CONFIG_REGION` (region exactly as read).
-- Read from the environment: `AWSPROFILE_IGNORE_EXPLICIT_NONE_PROFILE=true` suppresses the explicit-`none` alert message.
+- Exported by the script: `AWS_PROFILE`, `AWS_REGION`, `AWSPROFILE_CONFIG_PROFILE` (profile as read, whitespace-trimmed), `AWSREGION_CONFIG_REGION` (region as read, whitespace-trimmed).
+- Read from the environment: `AWSPROFILE_IGNORE_EXPLICIT_NONE_PROFILE` — only the exact string `true` suppresses the explicit-`none` alert; any other value (including `false` and `1`) leaves the alert in place.
 
-## Current-head observations (owned by the parallel behavior unit)
-Recorded from the fixture harness on this head so docs and code reconcile visibly. The scripts are outside the docs unit's scope; the README documents the intended contract.
-- The explicit-`none` alert never prints: the guard at line 61 is a malformed test expression (`[[ -z "${V}"] && ["$V" = true ]]` — shellcheck SC1073/SC1019/SC1020/SC1072). `AWSPROFILE_IGNORE_EXPLICIT_NONE_PROFILE` is therefore a no-op at this head.
-- `grep -q none` (line 60) matches the word anywhere in the file, not just as an exact line-1 value — e.g. a profile named `nonexistent-profile` or a region containing `none` also clears `AWS_PROFILE`.
-- Plain-ZSH installs source the `.sh` copy, whose tail fails the ZSH detection, so no chpwd hook registers: the profile is set once at startup and not refreshed on `cd`. The plugin copy registers correctly under Oh My Zsh (verified: hook fires on `cd`), and in bare zsh without Oh My Zsh the plugin copy hits an unautoloaded `add-zsh-hook` (command not found).
+## History: divergences at the wave base `4f8ce56`, fixed by PR #4 (`97e6ad9`)
+Recorded at the wave base by this unit's fixture harness, re-verified fixed on `97e6ad9` (see `.obvious/QA.md`):
+- the explicit-`none` alert never printed (malformed test expression at old line 61, shellcheck SC1073/SC1019/SC1020/SC1072) and the suppressor was a no-op → alert prints by default, silenced only by exactly `true`;
+- `grep -q none` matched the word anywhere in the file, wiping `AWS_PROFILE` for names like `nonexistent-profile` → exact-match on the parsed line-1 value now;
+- plain-ZSH installs sourcing the `.sh` copy registered no chpwd hook (tail-of-`$0` detection), and bare-zsh plugin installs hit an unautoloaded `add-zsh-hook` → registration now keys off `${ZSH_VERSION:-}` / `${BASH_VERSION:-}` and autoloads `add-zsh-hook`.
+Additional #4 behavior this unit verified: whitespace-only line 1 is treated as an empty file (warning, rc 2, environment untouched), values are whitespace-trimmed, and `awsprofile_find_up` normalizes via `pwd -P` (hardening).
 
 ## Pointers
 - File-by-file map: `.obvious/codebase-map.md`

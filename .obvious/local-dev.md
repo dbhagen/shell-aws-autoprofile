@@ -1,6 +1,6 @@
 # Local development — shell-aws-autoprofile
 
-Updated 2026-10-09 against head `4f8ce56042b134174e514b20caf146c439b6d3c0`.
+Updated 2026-10-09 against head `97e6ad91aa5a68a955a335a27c9656bdecd8d065` (branch `master`, after behavior PR #4 merged).
 
 ## There is no build step
 The product is two byte-identical shell scripts. Clone, source, done — no compiler, package manager, or dependency install. To try it locally:
@@ -17,7 +17,7 @@ cmp shell-aws-autoprofile.sh shell-aws-autoprofile.plugin.zsh   # silence = in s
 ```
 
 ## Tests
-`tests/run.sh` is the test entrypoint (added by the behavior/test PR of the 2026-10-09 maintenance wave; not present at the docs PR's base commit). It runs the synthetic-fixture suite under both **bash and zsh**:
+`tests/run.sh` is the test entrypoint, merged to `master` with the behavior/test PR #4. It runs the 72-assertion synthetic-fixture suite under both **bash and zsh** — verified green on both at `97e6ad9`:
 
 ```bash
 bash tests/run.sh
@@ -27,7 +27,7 @@ zsh tests/run.sh
 ## Lint gate: shellcheck
 `shellcheck` is the lint gate for the scripts. On Debian-family sandboxes: `sudo apt-get install shellcheck` (0.10.0 used for the wave verification).
 
-At head `4f8ce56`, `shellcheck -s bash shell-aws-autoprofile.sh` reports 5 findings (SC1009, SC1073, SC1019, SC1020, SC1072), all from the single malformed test expression guarding the explicit-`none` alert (line 61); `-s zsh shell-aws-autoprofile.plugin.zsh` is clean. Fixing that belongs to the parallel behavior unit; new work should not add findings.
+At `97e6ad9`, `shellcheck -s bash shell-aws-autoprofile.sh` is **clean** — the 5 findings present at the wave base (SC1009, SC1073, SC1019, SC1020, SC1072, all from the old malformed alert guard) were fixed by PR #4. Note shellcheck has no zsh dialect (`-s zsh` is rejected with `Unknown shell`), so the plugin copy is kept lint-clean via byte-identity with the `.sh` copy (`cmp`); new work should not add bash-mode findings.
 
 ## Manual fixture verification (no AWS credentials, no network)
 For one-off checks, run the script inside a disposable environment with a private `HOME` and synthetic `.awsprofile` fixtures:
@@ -43,4 +43,4 @@ echo "AWS_PROFILE=$AWS_PROFILE AWS_REGION=$AWS_REGION"
 EOF
 ```
 
-Expected output: `AWS_PROFILE=my-profile AWS_REGION=us-east-1`. Swap `bash -s` for `zsh -s` (and source the plugin copy with `ZSH=/path/to/oh-my-zsh` to exercise the Oh My Zsh branch) for the ZSH side. `.obvious/QA.md` records the full scenario matrix and observed results at this head.
+Expected output: `AWS_PROFILE=my-profile AWS_REGION=us-east-1`. Values are whitespace-trimmed; CRLF endings are stripped. Swap `bash -s` for `zsh -s` (and export `ZSH=/path/to/oh-my-zsh` containing an `oh-my-zsh.sh` file to exercise the Oh My Zsh branch; without it the plain-ZSH `autoload add-zsh-hook` branch registers) for the ZSH side. `.obvious/QA.md` records the full 24-scenario matrix and observed results at this head.

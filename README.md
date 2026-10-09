@@ -57,6 +57,8 @@ us-east-1
 - **Line 2 — AWS region (optional).** If present, it is applied as `AWS_REGION`; if line 2 is missing or empty, `AWS_REGION` is left untouched.
 - **Extra lines are ignored.** Only the first two lines are ever read.
 - **Windows-style (CRLF) line endings are tolerated.** A trailing carriage return is stripped from each line.
+- **Surrounding whitespace is trimmed.** Spaces and tabs around a value are ignored.
+- **An empty or whitespace-only line 1 is treated as an empty file.** The add-on prints a warning and leaves the environment untouched.
 
 ### Lookup order
 Whenever you change directory (and once when your shell starts), the add-on looks for a `.awsprofile` file:
@@ -68,24 +70,24 @@ Whenever you change directory (and once when your shell starts), the add-on look
 The nearest file wins — a project's own `.awsprofile` always beats one higher up the tree or in `$HOME`. If no `.awsprofile` is found anywhere, the add-on prints `No .awsprofile file found` and leaves `AWS_PROFILE` and `AWS_REGION` exactly as they were.
 
 ### The reserved `none` profile
-Setting line 1 to the exact string `none` is reserved: it clears `AWS_PROFILE` (resets it to the empty string), letting you opt a directory tree out of automatic profile selection.
+Setting line 1 to the exact string `none` is reserved: it unsets `AWS_PROFILE` — the variable no longer exists in your environment afterward — letting you opt a directory tree out of automatic profile selection.
 
 ```
 none
 us-east-1
 ```
 
-The region on line 2 is still honored, so `none` plus a region gives you an `AWS_REGION` with no `AWS_PROFILE`. By default, the add-on prints an alert when an explicit `none` profile is applied; setting `AWSPROFILE_IGNORE_EXPLICIT_NONE_PROFILE=true` in your environment suppresses that alert message.
+The region on line 2 is still honored, so `none` plus a region gives you an `AWS_REGION` with no `AWS_PROFILE`. The reserved value must be line 1's exact value after trimming surrounding whitespace — names that merely contain `none`, such as `nonexistent-profile`, are ordinary profiles. By default, the add-on prints an alert when an explicit `none` profile is applied; setting `AWSPROFILE_IGNORE_EXPLICIT_NONE_PROFILE=true` in your environment suppresses that alert message. Only the exact string `true` silences it — `false`, `1`, or any other value leaves the alert in place.
 
 ### Environment variables
 The add-on exports:
 
 | Variable | Set to |
 | --- | --- |
-| `AWS_PROFILE` | The profile from line 1; empty when the profile is `none`. |
+| `AWS_PROFILE` | The profile from line 1; unset — removed from the environment entirely — when the profile is `none`. |
 | `AWS_REGION` | The region from line 2, when one is present. |
-| `AWSPROFILE_CONFIG_PROFILE` | The profile name exactly as read from the matched `.awsprofile` file (introspection; empty when no profile applies). |
-| `AWSREGION_CONFIG_REGION` | The region exactly as read from the matched `.awsprofile` file (introspection; empty when no region applies). |
+| `AWSPROFILE_CONFIG_PROFILE` | The profile name as read from the matched `.awsprofile` file after trimming surrounding whitespace (introspection; empty when no profile applies). |
+| `AWSREGION_CONFIG_REGION` | The region as read from the matched `.awsprofile` file after trimming surrounding whitespace (introspection; empty when no region applies). |
 
 ### Two copies of the script, one rule
 `shell-aws-autoprofile.sh` is the copy you source for Bash and plain ZSH installs; `shell-aws-autoprofile.plugin.zsh` is the copy Oh My Zsh loads from the custom plugins folder. The two files are byte-for-byte identical — if you change one, mirror the change in the other so every install method behaves the same.
